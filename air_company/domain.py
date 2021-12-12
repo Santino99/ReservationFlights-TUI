@@ -186,7 +186,7 @@ class AirCompany:
         del self.__tickets[index]
 
     def sort_by_departure_date(self) -> None:
-        self.__tickets.sort(key=lambda x: x.departureDateTime)
+        self.__tickets.sort(key=lambda x: x.departureDateTime, reverse=True)
 
-    def sort_by_time_flight(self) -> None:
-        self.__tickets.sort(key=lambda x: x.timeFlight, reverse=True)
+    def sort_by_price(self) -> None:
+        self.__tickets.sort(key=lambda x: x.price, reverse=True)

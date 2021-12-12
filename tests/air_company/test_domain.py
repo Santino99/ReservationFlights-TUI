@@ -184,7 +184,7 @@ def test_sort_departure_date():
     airCompany = AirCompany()
     ticket = Ticket(1, Author(1), Name("Santino"), Surname("Locanto"), Departure("Crotone"),
                     Destination("Lamezia Terme"),
-                    Price.create(15, 20), DepartureDateTime(datetime.datetime(2022, 12, 12, 17, 0)),
+                    Price.create(15, 20), DepartureDateTime(datetime.datetime(2022, 12, 10, 17, 0)),
                     TimeFlight(datetime.time(0, 40)))
 
     airCompany.add_ticket(ticket)
@@ -195,21 +195,20 @@ def test_sort_departure_date():
                      TimeFlight(datetime.time(0, 40)))
     airCompany.add_ticket(ticket2)
     airCompany.sort_by_departure_date()
-
     assert airCompany.ticket(0) == ticket2
 
 
-def test_sort_time_flight():
+def test_sort_price():
     airCompany = AirCompany()
     ticket = Ticket(1, Author(1), Name("Santino"), Surname("Locanto"), Departure("Crotone"),
                     Destination("Lamezia Terme"),
-                    Price.create(15, 20), DepartureDateTime(datetime.datetime(2022, 12, 12, 17, 0)),
+                    Price.create(13, 20), DepartureDateTime(datetime.datetime(2022, 12, 11, 17, 0)),
                     TimeFlight(datetime.time(0, 49)))
     airCompany.add_ticket(ticket)
     ticket2 = Ticket(2, Author(2), Name("Massimo Pio"), Surname("Iorio"), Departure("Ciampino"),
                      Destination("Lamezia Terme"),
-                     Price.create(15, 20), DepartureDateTime(datetime.datetime(2022, 12, 11, 17, 0)),
+                     Price.create(15, 20), DepartureDateTime(datetime.datetime(2022, 12, 12, 17, 0)),
                      TimeFlight(datetime.time(0, 50)))
     airCompany.add_ticket(ticket2)
-    airCompany.sort_by_time_flight()
+    airCompany.sort_by_price()
     assert airCompany.ticket(0) == ticket2
