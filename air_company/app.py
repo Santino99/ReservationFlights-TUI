@@ -11,24 +11,26 @@ from air_company.domain import AirCompany, Ticket, Name, Surname, Departure, Des
 
 api_server = 'http://localhost:8000/api/v1'
 
+
 class App:
     __key = None
-    __idAuthor = None
+    __idUser = None
 
     def __first_menu(self):
-        self.__first_menu = Menu.Builder(Description('Reservation Flight Login'), auto_select=lambda: print("Hi!")) \
+        self.__first_menu = Menu.Builder(Description('Reservation Flights Login'), auto_select=lambda: print("Hi!")) \
             .with_entry(Entry.create('1', 'Login', is_logged=lambda: self.login())) \
             .with_entry(Entry.create('2', 'Sign in', on_selected=lambda: self.registration())) \
             .with_entry(Entry.create('0', 'Exit', on_selected=lambda: print('Bye!'), is_exit=True)) \
             .build()
 
     def __secondary_menu(self):
-        self.__menu = Menu.Builder(Description('Reservation Flight Home'), auto_select=lambda: self.__print_tickets()) \
+        self.__secondary_menu = Menu.Builder(Description('Reservation Flights Home'), auto_select=lambda: self.__print_tickets()) \
             .with_entry(Entry.create('1', 'Add ticket', on_selected=lambda: self.__add_ticket())) \
             .with_entry(Entry.create('2', 'Remove ticket', on_selected=lambda: self.__remove_ticket())) \
-            .with_entry(Entry.create('3', 'Sort by departure date', on_selected=lambda: self.__sort_by_departure_date_time())) \
-            .with_entry(Entry.create('4', 'Sort by price', on_selected=lambda: self.__sort_by_price())) \
-            .with_entry(Entry.create('0', 'Exit', on_selected=lambda: print('Bye!'), is_exit=True)) \
+            .with_entry(Entry.create('3', 'Update ticket', on_selected=lambda: self.__update_ticket())) \
+            .with_entry(Entry.create('4', 'Sort by departure date', on_selected=lambda: self.__sort_by_departure_date_time())) \
+            .with_entry(Entry.create('5', 'Sort by price', on_selected=lambda: self.__sort_by_price())) \
+            .with_entry(Entry.create('0', 'Logout', on_selected=lambda: self.logout(), is_exit=True)) \
             .build()
 
     def __init__(self):
@@ -62,11 +64,9 @@ class App:
             return False
         json = res.json()
         self.__key = json['key']
-        print(self.__key)
-       # res2 = requests.get(url=f'{api_server}/authenticate/', headers={'Authorization': f'Token {self.__key}'})
-        # resString = str(res2.content)
-       # json = res2.json()
-       # self.__idAuthor = json['id']  # int(resString[8:-2])
+        resGetId = requests.get(url=f'{api_server}/tickets/idUserLogged/{username}', headers={'Authorization': f'Token {self.__key}'})
+        json = resGetId.json()
+        self.__idUser = json['id']
         return True
 
     def registration(self):
@@ -75,17 +75,14 @@ class App:
         password = input('Password: ')
         password2 = input('Ripeti Password: ')
 
-        res = requests.post(url=f'{api_server}/auth/registration/',
-                            data={'username': username, 'email': email, 'password1': password, 'password2': password2})
+        res = requests.post(url=f'{api_server}/auth/registration/', data={'username': username, 'email': email, 'password1': password, 'password2': password2})
         if res.status_code == 400:
             print('Something went wrong')
 
     def __add_ticket(self) -> None:
         name, surname, departure, destination, price, departureDateTime, timeFlight = self.__read_ticket()
-        ticket = Ticket(-1, Author(2), name, surname, departure, destination, price, departureDateTime, timeFlight)
-        self.__airCompany.add_ticket(ticket)
         obj = {
-            "author": 2,
+            "author": self.__idUser,
             "name": str(name),
             "surname": str(surname),
             "departure": str(departure),
@@ -109,10 +106,43 @@ class App:
             print('Cancelled!')
             return
 
-        todelete = self.__airCompany.ticket(index - 1)
-        res = requests.delete(url=f'{api_server}/tickets/{todelete.id}/', headers={'Authorization': f'Token {self.__key}'})
-        self.__airCompany.remove_ticket(index - 1)
-        print('Ticket removed')
+        to_delete = self.__airCompany.ticket(index - 1)
+        res = requests.delete(url=f'{api_server}/tickets/{to_delete.id}/', headers={'Authorization': f'Token {self.__key}'})
+        if res.status_code == 403:
+            print("You are not authorized to delete this ticket")
+        else:
+            self.__airCompany.clear()
+            self.fetch_tickets()
+            print('Ticket removed!')
+
+    def __update_ticket(self) -> None:
+        def builder(value: str) -> int:
+            validate('value', int(value), min_value=0, max_value=self.__airCompany.tickets())
+            return int(value)
+        index = self.__read('Index (0 to cancel)', builder)
+        if index == 0:
+            print('Cancelled!')
+            return
+        to_update = self.__airCompany.ticket(index - 1)
+        name, surname, departure, destination, price, departureDateTime, timeFlight = self.__read_ticket()
+        obj = {
+            "id": to_update.id,
+            "author": self.__idUser,
+            "name": str(name),
+            "surname": str(surname),
+            "departure": str(departure),
+            "destination": str(destination),
+            "price": str(price),
+            "departureDateTime": str(departureDateTime),
+            "timeFlight": str(timeFlight)
+        }
+        res = requests.put(url=f'{api_server}/tickets/{to_update.id}/', json=obj, headers={'Authorization': f'Token {self.__key}'})
+        if res.status_code == 403:
+            print("You are not authorized to update this ticket")
+        else:
+            self.__airCompany.clear()
+            self.fetch_tickets()
+            print('Ticket updated!')
 
     def __sort_by_departure_date_time(self) -> None:
         self.__airCompany.sort_by_departure_date()
@@ -148,7 +178,7 @@ class App:
             if self.__key is None:
                 error_message()
             self.fetch_tickets()
-            self.__menu.run()
+            self.__secondary_menu.run()
         goodbye()
 
     def run(self) -> None:
@@ -163,7 +193,7 @@ class App:
             try:
                 line = input(f'{prompt}: ')
                 if prompt == "DepartureDateTime":
-                    line = datetime.datetime.strptime(line, '%d/%m/%y %H:%M')
+                    line = datetime.datetime.strptime(line, '%d/%m/%Y %H:%M')
                     res = builder(line)
                     return res
                 elif prompt == "TimeFlight":
@@ -187,6 +217,13 @@ class App:
 
         return name, surname, departure, destination, price, departureDateTime, timeFlight
 
+    def logout(self):
+        res = requests.post(url=f'{api_server}/auth/logout/', headers={'Authorization': f'Token {self.__key}'})
+        print('Logged out!')
+        print()
+        self.__key = None
+        self.__airCompany.clear()
+
 
 def main(name: str):
     if name == '__main__':
@@ -195,11 +232,11 @@ def main(name: str):
 
 def welcome():
     print(
-        '================================================================================= ReservationFlight TUI ===============================================================================')
+        '================================================================================= ReservationFlights TUI ===============================================================================')
     print(
-        '========================================================================== Because we love the \'80s so much! =======================================================================')
+        '========================================================================== Because we love the \'80s so much! =========================================================================')
     print(
-        '============================================================================================================================================================================\n')
+        '=======================================================================================================================================================================================\n')
 
 
 def error_message():
