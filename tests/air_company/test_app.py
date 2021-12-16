@@ -45,7 +45,7 @@ def test_user_already_registered(mocked_print, mocked_input, mocked_requests_pos
 @patch('requests.post', side_effect=[mock_response_dict(200, {'key': 'dd72faf5a81fea7e7304a3de632aa1a9eb1ec250'}),
                                      mock_response_dict(200)])
 @patch('builtins.input', side_effect=['1', 'Iorio', 'massimo99', '1', 'Pietro', 'Cofone',
-                                      'Lamezia Terme', 'Torino', '50', '03/02/22 19:30', '01:00'])
+                                      'Lamezia Terme', 'Torino', '50', '03/02/2022 19:30', '01:00'])
 @patch('builtins.print')
 def test_add_ticket(mocked_print, mocked_input, mocked_requests_post):
     with patch('builtins.open'):
@@ -81,7 +81,7 @@ def test_remove_ticket_cancelled(mocked_print, mocked_input, mocked_requests_pos
 
 @patch('requests.post', side_effect=[mock_response_dict(200, {'key': 'dd72faf5a81fea7e7304a3de632aa1a9eb1ec250'})])
 @patch('builtins.input', side_effect=['1', 'Iorio', 'massimo99', '3', '1', 'Santino', 'Locanto',
-                                      'Genova', 'Verona', '50', '03/02/22 19:30', '01:00'])
+                                      'Genova', 'Verona', '50', '03/02/2022 19:30', '01:00'])
 @patch('requests.put', side_effect=[mock_response_dict(200)])
 @patch('builtins.print')
 def test_update_ticket(mocked_print, mocked_input, mocked_requests_post, mocked_requests_put):
